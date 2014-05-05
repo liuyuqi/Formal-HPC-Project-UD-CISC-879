@@ -1,0 +1,93 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <civlc.h>
+
+$input int NUM;
+$assume(NUM < 10 && NUM >= 2);
+$input int NUMTEST;
+$assume(NUMTEST < 10 && NUMTEST >= 1);
+
+float MIU;
+//#pragma omp threadprivate(MIU)
+
+typedef struct
+{
+    int node_number;
+    int node_power;
+    int end_tag;
+    int id;
+    int priority;
+    int critical;
+    int to_schedule;
+    int scheduled;
+    int dest_core;
+    int start_time;
+    int cost;
+} node_t; /*任务节点 The data structure for task nodes.*/
+
+node_t testnode [NUM + 1]; /*测试节点 A list of all the tasks.*/
+
+/*DAG图的邻接矩阵  The adjacent matrix of the DAG*/
+int dag [NUM][NUM]; 
+
+/*转换后的邻接矩阵  The adjacent matrix of the DAG after conversion*/
+int dag_new [NUM+1][NUM+1]; 
+
+/*用于任务可执行性检测的邻接矩阵 
+ * The adjacent matrix of the DAG used for checking the eligibility of execution of tasks.*/
+int dag_dynamic [NUM+1][NUM+1]; 
+
+/*DAG图中边的权值矩阵  The matrix of power on edges in the DAG*/
+int e_power [NUM+1][NUM+1]; 
+
+/*转换后的边权值矩阵  The matrix of power on edges after transfer */
+int e_power_new [NUM+1][NUM+1]; 
+
+//#pragma omp threadprivate (testnode, dag, dag_new, dag_dynamic, e_power, e_power_new)
+
+typedef struct
+{
+    int cid;
+    int curr_node;
+    int last_node;
+    int idle; 
+    int remain;
+} core_t;
+
+/*处理器核心数目 Number of cores on a processor*/
+$input int NCORE;
+$assume (NCORE <= 4 && NCORE > 0);
+
+/*建立一个多核处理器 A multi-core processor */
+core_t core[NCORE];
+
+int task;
+int ticks;
+int need_schedule = 0;
+int ready_list[NUM + 1];
+int cpufree;
+
+//#pragma omp threadprivate(core, task, ticks, need_schedule, ready_list, cpufree)
+
+/*邻接表定义区*/
+/*Definitions of adjacent table*/
+typedef node_t vextype;
+typedef struct node {
+    int adjvex;
+    int dur;
+    struct node *next;
+}edgenode;
+typedef struct {
+    vextype vertex;
+    int id;
+    edgenode *link;
+}vexnode;
+vexnode ga[NUM+1]; 
+//#pragma omp threadprivate(ga)
+
+
+
+void main()
+{
+
+}
