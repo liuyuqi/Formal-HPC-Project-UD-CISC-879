@@ -3,6 +3,7 @@
 #include <time.h>
 
 #define NUM 100 /*任务节点个数*/
+#define NUMTEST 100
 //#define MIU 1/NUM /*权值折算时的系数*/
 
 float MIU;
@@ -624,7 +625,7 @@ int main (void)
     for (result_idx = 0; result_idx <= 100; result_idx++) {
         result_total[result_idx] = 0;
     }
-    for (test = 0; test < 50; test ++) {
+    for (test = 0; test < NUMTEST; test ++) {
         for (result_idx = 0; result_idx <= 100; result_idx++) {
             result[result_idx] = 0;
         }

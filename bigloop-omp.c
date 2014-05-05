@@ -4,11 +4,11 @@
 #include <time.h>
 
 #define NUM 100 /*任务节点个数*/
+#define NUMTEST 100
 //#define MIU 1/NUM /*权值折算时的系数*/
 
 float MIU;
-int var;
-#pragma omp threadprivate(MIU, var)
+#pragma omp threadprivate(MIU)
 
 typedef struct
 {
@@ -212,7 +212,6 @@ void dag_create () {
 /*Randomly produces the edges' power values of the DAG.*/
 void empower_epower ()
 {
-
     srand (time (NULL));
 
     int i, j;
@@ -534,7 +533,9 @@ int search_core_satisfy (int task)
     for (i = 0; i < NUM + 1; i++) {
         if (dag_new[i][task] != dag_dynamic[i][task]) {
             prev_core = testnode[i].dest_core;
-            if (core[prev_core].idle == 1) return prev_core;
+            if (core[prev_core].idle == 1) {
+				return prev_core;
+			}
         }   
     }
     return -1;
@@ -626,13 +627,13 @@ void node_recover ()
 
 int main (void)
 {
-    int test, result_idx;
+    int test, result_idx, var;
     int result[101];
     long result_total[101];
     for (result_idx = 0; result_idx <= 100; result_idx++) {
         result_total[result_idx] = 0;
     }
-    for (test = 0; test < 4; test++) {
+    for (test = 0; test < NUMTEST; test++) {
         for (result_idx = 0; result_idx <= 100; result_idx++) {
             result[result_idx] = 0;
         }
@@ -658,9 +659,12 @@ int main (void)
         /*Stage of implementing scheduling algorithm.*/
         
 /*BEGINNING OF PARALLEL REGION*/
-#pragma omp parallel for default (none)\
-		firstprivate (result)\
-		shared (result_total)
+#pragma omp parallel for default (none) \
+		firstprivate (result) \
+		private (var) \
+		shared (result_total) \
+		copyin (testnode, dag, dag_new, dag_dynamic, e_power, e_power_new)
+		
         for (var = 0; var <= 100; var++) {
             MIU = (float)var / 100.0;
             core_init ();

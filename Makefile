@@ -9,5 +9,11 @@ par: bigloop-omp.c
 	$(CC) $(CFLAGS) -fopenmp bigloop-omp.c -o bigloop-omp
 	./bigloop-omp
 
+run: bigloop.cvl
+	civl run bigloop.cvl
+
+verify: bigloop.cvl
+	civl verify bigloop.cvl
+
 clean:
 	rm bigloop bigloop-omp *.log
