@@ -11,7 +11,7 @@
 
 #define NUM 5
 #define NUMTEST 1
-$input MAX_THREADS;
+$input int MAX_THREADS;
 $assume(MAX_THREADS <= 4 && MAX_THREADS >= 0);
 
 float MIU;
@@ -157,24 +157,25 @@ void epower_init () {
 }
 
 /*随机生成节点权值*/
-/*Randomly produces the power values of vertices*/
+/*Randomly generates the power values of vertices*/
 void empower_node (node_t* p_node) {
     int i = 0;
     for (i = 0; i < NUM; i++) {
-		p_node -> node_power = node_power[i] % 100;
-        $assume(p_node -> node_power != 0);
+		$assume(node_power[i] > 0 && node_power[i] < 100);
+		p_node -> node_power = node_power[i];
         p_node++;
     }
 }
 
 /*DAG图邻接矩阵的随机生成*/ 
-/*Randomly produces the adjacent matrix of DAG*/
+/*Randomly generates the adjacent matrix of DAG*/
 void dag_create () {
     int i = 0, j = 0;
     int temp_sum = 0, flag = 0; 
     
     for (i = 0; i < NUM; i++) {
 		for (j = 0; j < NUM; j++) {
+			$assume(dag_random[i][j] == 0 || dag_random[i][j] == 1);
 			dag[i][j] = dag_random[i][j];
 		}
     }
@@ -218,8 +219,10 @@ void empower_epower ()
     int i, j;
     for (i = 0; i < NUM; i++) { 
         for (j = 0; j < NUM; j++) {
-            if (dag[i][j] != 0) 
-                e_power[i][j] = e_power_random[i][j] % 100 + 16;
+            if (dag[i][j] != 0) {
+				$assume(e_power_random[i][j] > 0 && e_power_random[i][j] < 100);
+                e_power[i][j] = e_power_random[i][j] + 16;
+            }
         }
     }
 }
@@ -547,7 +550,7 @@ int algorithm () {
         need_schedule = find_next_node ();
         if (need_schedule) {
             des_core = -1;
-            while ( check_free_core () && exist_pri (3)) {
+            while ( (check_free_core () != 0) && (exist_pri (3) != 0) ) {
                 task = pick_pri (3);
                 des_core = -1;
                 des_core = search_core_satisfy (task);
@@ -568,7 +571,7 @@ int algorithm () {
             while ( check_free_core () && exist_pri (0) ) {
                 task = pick_pri (0);
                 schedule (task);
-            }	
+            }
         }
     }
     int large = 0;
@@ -673,3 +676,4 @@ void main()
 			$assert(result_total_seq[var] == result_total_par[var]);
     }
 }
+

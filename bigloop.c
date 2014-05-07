@@ -141,7 +141,7 @@ void epower_init () {
 }
 
 /*随机生成节点权值*/
-/*Randomly produces the power values of vertices*/
+/*Randomly generates the power values of vertices*/
 void empower_node (node_t* p_node) {
     srand (time (NULL));
     int i = 0;
@@ -154,7 +154,7 @@ A:      p_node -> node_power = rand() % 100;
 }
 
 /*DAG图邻接矩阵的随机生成*/ 
-/*Randomly produces the adjacent matrix of DAG*/
+/*Randomly generates the adjacent matrix of DAG*/
 void dag_create () {
     int i = 0, j = 0;
     int temp_sum = 0, flag = 0; 
@@ -203,7 +203,7 @@ void dag_create () {
 }
 
 /*DAG图边权值的随机生成*/
-/*Randomly produces the edges' power values of the DAG.*/
+/*Randomly generates the edges' power values of the DAG.*/
 void empower_epower ()
 {
     srand (time (NULL));
@@ -639,11 +639,11 @@ int main (void)
         core_init ();	/*处理器模型的初始化 init on the processor model */
 
         /*随机数生成阶段*/
-        /*Stage of random number production*/
+        /*Stage of random number generation*/
         p_node = testnode;
-        empower_node (p_node);/*随机生成节点权值 Randomly produces the power of nodes*/
-        dag_create ();/*DAG图邻接矩阵的随机生成 Randomly produces the adjacent matrix of the DAG.*/ 
-        empower_epower ();/*DAG图边权值的随机生成 Randomly produces the power of edges.*/
+        empower_node (p_node);/*随机生成节点权值 Randomly generates the power of nodes*/
+        dag_create ();/*DAG图邻接矩阵的随机生成 Randomly generates the adjacent matrix of the DAG.*/ 
+        empower_epower ();/*DAG图边权值的随机生成 Randomly generates the power of edges.*/
         dag_makeup (); /*将DAG补全成AOE网络 Convert the DAG to Activity-on-Edge network*/
         //dag_print ();
 
