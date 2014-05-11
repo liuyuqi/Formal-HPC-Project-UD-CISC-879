@@ -9,7 +9,7 @@
 
 #define CIVL_owns(t, n, i) ((i)%(n)==(t))
 
-#define NUM 5
+#define NUM 4
 #define NUMTEST 1
 $input int MAX_THREADS;
 $assume(MAX_THREADS <= 4 && MAX_THREADS >= 0);
@@ -172,33 +172,32 @@ void empower_node (node_t* p_node) {
 void dag_create () {
     int i = 0, j = 0;
     int temp_sum = 0, flag = 0; 
-    
     for (i = 0; i < NUM; i++) {
 		for (j = 0; j < NUM; j++) {
-			$assume(dag_random[i][j] == 0 || dag_random[i][j] == 1);
 			dag[i][j] = dag_random[i][j];
 		}
     }
+  
     dag[0][1] = 1; /*一个必须满足的条件，第一节点必须有边*/
     /*The first node must have an edge setting off from it.*/
     dag[NUM - 2][NUM - 1] = 1;
 
-        for (i = 0; i < NUM - 1; i++) {
-            for (j = i + 1; j < NUM; j++) 
-                if (i == 0 && j == 1 ) 
-                    dag[i][j] = 0;
+    for (i = 0; i < NUM - 1; i++) {
+        for (j = i + 1; j < NUM; j++) 
+            if (i == 0 && j == 1 ) 
+                dag[i][j] = 0;
 		}
 
-        /*终边约束条件判断*/ 
-        /*Judges whether the final edge is legal*/
-        flag = 0;
-        for (j = 2; j < NUM; j++) {
-            temp_sum = 0; /*计算准备*/
-            for (i = 0; i < j; i++)
-                temp_sum += dag[i][j]; /*循环累加*/
-			$assume(temp_sum != 0);
-        }
-        epower_init ();
+    /*终边约束条件判断*/ 
+    /*Judges whether the final edge is legal*/
+    flag = 0;
+    for (j = 2; j < NUM; j++) {
+        temp_sum = 0; /*计算准备*/
+        for (i = 0; i < j; i++)
+            temp_sum += dag[i][j]; /*循环累加*/
+		$assume(temp_sum != 0);
+    }
+    epower_init ();
 
     /* 判断终点（不再发出边的点）并标记 */
     /*Judges and marks the end edges.*/
@@ -593,6 +592,16 @@ void node_recover ()
         ++ p_node;
     }
     //-- p_node;
+}
+
+void random_test()
+{
+	int i, j;
+    for (i = 0; i < NUM; i++) {
+		for (j = 0; j < NUM; j++) {
+			$assume(dag_random[i][j] == 0 || dag_random[i][j] == 1);
+		}
+    }
 }
 
 void main()
