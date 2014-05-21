@@ -9,17 +9,17 @@
 
 #define CIVL_owns(t, n, i) ((i)%(n)==(t))
 
-#define NUM 4
+#define NUM 3
 #define NUMTEST 1
 $input int MAX_THREADS;
-$assume(MAX_THREADS <= 4 && MAX_THREADS >= 0);
+$assume(MAX_THREADS <= 2 && MAX_THREADS >= 0);
 
 float MIU;
 
 typedef struct
 {
-    int node_number;
-    int node_power;
+    int vertex_number;
+    int vertex_power;
     int end_tag;
     int id;
     int priority;
@@ -29,43 +29,42 @@ typedef struct
     int dest_core;
     int start_time;
     int cost;
-} node_t; /*任务节点 The data structure for task nodes.*/
+} vertex_t; /* The data structure for task vertexs.*/
 
-node_t testnode [NUM + 1]; /*测试节点 A list of all the tasks.*/
+vertex_t testvertex [NUM + 1]; /* A list of all the tasks.*/
 
-/*DAG图的邻接矩阵  The adjacent matrix of the DAG*/
+/* The adjacent matrix of the DAG*/
 $input int dag_random[NUM][NUM];
-$input int node_power[NUM];
+$input int vertex_power[NUM];
 int dag [NUM][NUM]; 
 
-/*转换后的邻接矩阵  The adjacent matrix of the DAG after conversion*/
+/*The adjacent matrix of the DAG after conversion*/
 int dag_new [NUM+1][NUM+1]; 
 
-/*用于任务可执行性检测的邻接矩阵 
- * The adjacent matrix of the DAG used for checking the eligibility of execution of tasks.*/
+/* The adjacent matrix of the DAG used for checking the eligibility of execution of tasks.*/
 int dag_dynamic [NUM+1][NUM+1]; 
 
-/*DAG图中边的权值矩阵  The matrix of power on edges in the DAG*/
+/*The matrix of power on edges in the DAG*/
 $input int e_power_random[NUM+1][NUM+1];
 int e_power [NUM+1][NUM+1]; 
 
-/*转换后的边权值矩阵  The matrix of power on edges after transfer */
+/*The matrix of power on edges after transfer */
 int e_power_new [NUM+1][NUM+1]; 
 
 typedef struct
 {
     int cid;
-    int curr_node;
-    int last_node;
+    int curr_vertex;
+    int last_vertex;
     int idle; 
     int remain;
 } core_t;
 
-/*处理器核心数目 Number of cores on a processor*/
+/* Number of cores on a processor*/
 $input int NCORE;
-$assume (NCORE <= 4 && NCORE > 0);
+$assume (NCORE <= 2 && NCORE > 0);
 
-/*建立一个多核处理器 A multi-core processor */
+/* A multi-core processor */
 core_t core[NCORE];
 
 int task;
@@ -74,20 +73,19 @@ int need_schedule = 0;
 int ready_list[NUM + 1];
 int cpufree;
 
-/*邻接表定义区*/
 /*Definitions of adjacent table*/
-typedef node_t vextype;
-typedef struct node {
+typedef vertex_t vextype;
+typedef struct vertex {
     int adjvex;
     int dur;
-    struct node *next;
-}edgenode;
+    struct vertex *next;
+}edgevertex;
 typedef struct {
     vextype vertex;
     int id;
-    edgenode *link;
-}vexnode;
-vexnode ga[NUM+1];
+    edgevertex *link;
+}vexvertex;
+vexvertex ga[NUM+1];
 
 
 /* #########################################
@@ -101,32 +99,32 @@ void core_init ()
     int i;
     for (i = 0; i < NCORE; i++) {
         core[i].cid = i;
-        core[i].curr_node = -1;
-        core[i].last_node = -1;
+        core[i].curr_vertex = -1;
+        core[i].last_vertex = -1;
         core[i].idle = 0;
         core[i].remain = 0;
     }     
 }
 
-/*Initialization of nodes (or vertices)*/
-void node_init (node_t* p_node)
+/*Initialization of vertexs (or vertices)*/
+void vertex_init (vertex_t* p_vertex)
 {
     int i = 0;
     for (i = 0; i < NUM + 1; i++) {
-        p_node -> node_number = i;
-        p_node -> node_power = -1;
-        p_node -> end_tag = 0;
-        p_node -> id = 0;
-        p_node -> priority = 0;
-        p_node -> critical = 0;
-        p_node -> to_schedule = 0;
-        p_node -> scheduled = 0;
-        p_node -> dest_core = -1;
-        p_node -> start_time = -1;
-        p_node -> cost = 0;
-        ++ p_node;
+        p_vertex -> vertex_number = i;
+        p_vertex -> vertex_power = -1;
+        p_vertex -> end_tag = 0;
+        p_vertex -> id = 0;
+        p_vertex -> priority = 0;
+        p_vertex -> critical = 0;
+        p_vertex -> to_schedule = 0;
+        p_vertex -> scheduled = 0;
+        p_vertex -> dest_core = -1;
+        p_vertex -> start_time = -1;
+        p_vertex -> cost = 0;
+        ++ p_vertex;
     }
-    //--p_node; //This doesn't work in CIVL, why?
+    //--p_vertex; //This doesn't work in CIVL, why?
 }
 
 /*Initialization of the adjacent matrix of DAG*/
@@ -156,18 +154,16 @@ void epower_init () {
     }      
 }
 
-/*随机生成节点权值*/
 /*Randomly generates the power values of vertices*/
-void empower_node (node_t* p_node) {
+void empower_vertex (vertex_t* p_vertex) {
     int i = 0;
     for (i = 0; i < NUM; i++) {
-		$assume(node_power[i] > 0 && node_power[i] < 100);
-		p_node -> node_power = node_power[i];
-        p_node++;
+		$assume(vertex_power[i] > 0 && vertex_power[i] < 100);
+		p_vertex -> vertex_power = vertex_power[i];
+        p_vertex++;
     }
 }
 
-/*DAG图邻接矩阵的随机生成*/ 
 /*Randomly generates the adjacent matrix of DAG*/
 void dag_create () {
     int i = 0, j = 0;
@@ -178,8 +174,8 @@ void dag_create () {
 		}
     }
   
-    dag[0][1] = 1; /*一个必须满足的条件，第一节点必须有边*/
-    /*The first node must have an edge setting off from it.*/
+    dag[0][1] = 1;
+    /*The first vertex must have an edge setting off from it.*/
     dag[NUM - 2][NUM - 1] = 1;
 
     for (i = 0; i < NUM - 1; i++) {
@@ -188,18 +184,17 @@ void dag_create () {
                 dag[i][j] = 0;
 		}
 
-    /*终边约束条件判断*/ 
+ 
     /*Judges whether the final edge is legal*/
     flag = 0;
     for (j = 2; j < NUM; j++) {
-        temp_sum = 0; /*计算准备*/
+        temp_sum = 0;
         for (i = 0; i < j; i++)
-            temp_sum += dag[i][j]; /*循环累加*/
+            temp_sum += dag[i][j]; 
 		$assume(temp_sum != 0);
     }
     epower_init ();
 
-    /* 判断终点（不再发出边的点）并标记 */
     /*Judges and marks the end edges.*/
     for (i = 0; i < NUM; i++) {
         temp_sum = 0;
@@ -207,7 +202,7 @@ void dag_create () {
             temp_sum += dag[i][j];
         }
         if (temp_sum == 0) {
-            testnode[i].end_tag = 1;
+            testvertex[i].end_tag = 1;
         }
     }
 }
@@ -231,7 +226,7 @@ void dag_makeup()
 {
     int i, j;
     for (i = 0; i < NUM; i++) {
-        if (testnode[i].end_tag == 1)
+        if (testvertex[i].end_tag == 1)
             dag_new[i][NUM] = 1;
     }
     for (i = 0; i < NUM; i++) 
@@ -246,14 +241,14 @@ void dag_makeup()
     }
 }
 
-/*Conversion of the powers on nodes to that on edges*/
+/*Conversion of the powers on vertexs to that on edges*/
 void convert_dag ()
 {
     int i, j;
     for (i = 0; i < NUM; i++) {
         for (j = 0; j < NUM; j++) {
             if (dag[i][j] != 0) {
-                e_power_new[i][j] = e_power[i][j] * MIU + testnode[i].node_power;
+                e_power_new[i][j] = e_power[i][j] * MIU + testvertex[i].vertex_power;
             }
             else {
                 e_power_new[i][j] = e_power[i][j];
@@ -261,17 +256,17 @@ void convert_dag ()
         }
     }
     for (i = 0; i <= NUM; i++) {
-        if (testnode[i].end_tag == 1)
-            e_power_new[i][NUM] = testnode[i].node_power;
+        if (testvertex[i].end_tag == 1)
+            e_power_new[i][NUM] = testvertex[i].vertex_power;
     }
 }
 
 void createadjlist ()
 {
     int i, j, k;
-    edgenode *s;
+    edgevertex *s;
     for (i = 0; i < NUM + 1; i++) {
-        ga[i].vertex = testnode[i];
+        ga[i].vertex = testvertex[i];
         ga[i].id = 0;
         ga[i].link = NULL;
     }
@@ -280,8 +275,8 @@ void createadjlist ()
         for (j = 0; j < NUM + 1; j++) {
             if (dag_new[i][j] == 1) {
                 ga[j].id++;
-                testnode[j].id++;
-                s = (edgenode*) malloc (sizeof (edgenode));
+                testvertex[j].id++;
+                s = (edgevertex*) malloc (sizeof (edgevertex));
                 s -> adjvex = j;
                 s -> dur = e_power_new[i][j];
                 s -> next = ga[i].link;
@@ -298,7 +293,7 @@ void critical_path ()
     long front = -1, rear = -1;
     long tpord[NUM+1], vl[NUM+1], ve[NUM+1];
     long l[100000], e[100000];
-    edgenode *p;
+    edgevertex *p;
     for (i = 0; i < NUM+1; i++)
         ve[i] = 0;
     for (i = 0; i < NUM+1; i++) {
@@ -348,10 +343,10 @@ void critical_path ()
             e[++i] = ve[j];
             l[i] = vl[k] - p->dur;
             if (l[i] == e[i]) {
-                testnode[j].critical = 1;
-                testnode[j].priority = 2;
-                testnode[k].critical = 1;
-                testnode[k].priority = 2;
+                testvertex[j].critical = 1;
+                testvertex[j].priority = 2;
+                testvertex[k].critical = 1;
+                testvertex[k].priority = 2;
             }
             p = p -> next;
         }
@@ -372,7 +367,7 @@ int task_not_empty ()
 {
     int i;
     for (i = 0; i < NUM + 1; i++) {
-        if (testnode[i].scheduled == 0)
+        if (testvertex[i].scheduled == 0)
             return 1;
     }
     return 0;
@@ -383,7 +378,7 @@ int exist_pri (int pri)
 {
     int i;
     for (i = 0; i < NUM + 1; i++) {
-        if (testnode[i].scheduled == 0 && ready_list[i] == 1 && testnode[i].priority == pri)
+        if (testvertex[i].scheduled == 0 && ready_list[i] == 1 && testvertex[i].priority == pri)
             return 1;
     }
     return 0;
@@ -394,44 +389,44 @@ int pick_pri (int pri)
 {
     int i;
     for (i = 0; i < NUM + 1; i++) {
-        if (testnode[i].scheduled == 0 && ready_list[i] == 1 && testnode[i].priority == pri)
+        if (testvertex[i].scheduled == 0 && ready_list[i] == 1 && testvertex[i].priority == pri)
             return i;
     }
 }
 
 /*Seek the child tasks of the task that just finished execution.
  * On found return 1, otherwise return 0.*/
-int find_next_node ()
+int find_next_vertex ()
 {
     int i, j, k, flagtotal;
     int last = -1;
     flagtotal = 0;
     for (i = 0; i < NCORE; i++) {
         if (core[i].idle == 1) {
-            last = core[i].last_node;
+            last = core[i].last_vertex;
         }
         else continue;
 
         if (ticks != 0) {
             for (j = 0; j < NUM + 1; j++) {
-                if ( testnode[j].id == 0 && testnode[j].scheduled == 0) {
+                if ( testvertex[j].id == 0 && testvertex[j].scheduled == 0) {
                     flagtotal = 1;
-                    if (testnode[j].to_schedule == 0 && dag_new[last][j] == 1) {
-                        if (testnode[j].priority == 2) 
-                            testnode[j].priority = 3;
-                        else if (testnode[j].priority == 0) 
-                            testnode[j].priority = 1;
+                    if (testvertex[j].to_schedule == 0 && dag_new[last][j] == 1) {
+                        if (testvertex[j].priority == 2) 
+                            testvertex[j].priority = 3;
+                        else if (testvertex[j].priority == 0) 
+                            testvertex[j].priority = 1;
                     }
                     ready_list[j] = 1;
-                    testnode[j].to_schedule = 1;
+                    testvertex[j].to_schedule = 1;
                 }
             }
         }
         else {
             for (i = 0; i < NUM + 1; i++) {
-                if (testnode[i].id == 0) {
+                if (testvertex[i].id == 0) {
                     ready_list[i] = 1;
-                    testnode[i].to_schedule = 1;
+                    testvertex[i].to_schedule = 1;
                     flagtotal = 1;
                 }
             }
@@ -457,7 +452,7 @@ int search_core_satisfy (int task)
     int i, prev_core = -1;
     for (i = 0; i < NUM + 1; i++) {
         if (dag_new[i][task] != dag_dynamic[i][task]) {
-            prev_core = testnode[i].dest_core;
+            prev_core = testvertex[i].dest_core;
             if (core[prev_core].idle == 1) return prev_core;
         }   
     }
@@ -469,14 +464,15 @@ void schedule (int task)
     int i, j, large;
     for (i = 0; i < NCORE; i++) {
         if (core[i].idle == 1) {
-            testnode[task].dest_core = i;
+            testvertex[task].dest_core = i;
 
-            testnode[task].scheduled = 1;
-            testnode[task].to_schedule = 0;
+            testvertex[task].scheduled = 1;
+            testvertex[task].to_schedule = 0;
             core[i].idle = 0;
-            core[i].curr_node = task;
-            core[i].remain = testnode[task].node_power;
-            if (dag_new[core[i].last_node][task] == 0 ) {
+            core[i].curr_vertex = task;
+            core[i].remain = testvertex[task].vertex_power;
+            //civl bug found, changes
+            if (core[i].last_vertex >= 0 && dag_new[core[i].last_vertex][task] == 0 ) {
                 large = 0;
                 for (j = 0; j < NUM + 1; j++) {
                     if (dag_new[j][task] == 1 && large < e_power[j][task])
@@ -486,8 +482,8 @@ void schedule (int task)
             }
             if (task == NUM)
                 large = 0;
-            testnode[task].start_time = ticks + large;
-            testnode[task].cost = large;
+            testvertex[task].start_time = ticks + large;
+            testvertex[task].cost = large;
             ready_list[task] = 0;
             break;
         }
@@ -497,14 +493,14 @@ void schedule (int task)
 void schedule_to (int task, int to_core)
 {
     int large, j;
-    testnode[task].dest_core = to_core;
+    testvertex[task].dest_core = to_core;
 
-    testnode[task].scheduled = 1;
-    testnode[task].to_schedule = 0;
+    testvertex[task].scheduled = 1;
+    testvertex[task].to_schedule = 0;
     core[to_core].idle = 0;
-    core[to_core].curr_node = task;
-    core[to_core].remain = testnode[task].node_power;
-    if (dag_new[core[to_core].last_node][task] == 0 ) {
+    core[to_core].curr_vertex = task;
+    core[to_core].remain = testvertex[task].vertex_power;
+    if (dag_new[core[to_core].last_vertex][task] == 0 ) {
         large = 0;
         for (j = 0; j < NUM + 1; j++) {
             if (dag_new[j][task] == 1 && large < e_power[j][task])
@@ -514,8 +510,8 @@ void schedule_to (int task, int to_core)
     }
     if (task == NUM)
         large = 0;
-    testnode[task].start_time = ticks + large;
-    testnode[task].cost = large;
+    testvertex[task].start_time = ticks + large;
+    testvertex[task].cost = large;
     ready_list[task] = 0;
 }
 
@@ -529,16 +525,15 @@ int algorithm () {
                 core[coreid].remain--;
             if (core[coreid].remain == 0 && core[coreid].idle == 0) {
                 core[coreid].idle = 1;
-                core[coreid].last_node = core[coreid].curr_node;
-                core[coreid].curr_node = -1;
-                /*如果之前有任务执行，则将之前任务发出的有向边去掉*/
+                core[coreid].last_vertex = core[coreid].curr_vertex;
+                core[coreid].curr_vertex = -1;
                 /*If there was some tasks executing on the core, then eliminate the directed edge 
                  * from the previous task (vertex).*/
-                if (core[coreid].last_node != -1) {
+                if (core[coreid].last_vertex != -1) {
                     for (i = 0; i < NUM + 1; i++) {
-                        if (dag_new[core[coreid].last_node][i] == 1) {
-                            dag_dynamic [core[coreid].last_node][i] = 0; 
-                            testnode[i].id--;
+                        if (dag_new[core[coreid].last_vertex][i] == 1) {
+                            dag_dynamic [core[coreid].last_vertex][i] = 0; 
+                            testvertex[i].id--;
                         } 
                     }
                 } 
@@ -546,7 +541,7 @@ int algorithm () {
         }
 
         need_schedule = 0;
-        need_schedule = find_next_node ();
+        need_schedule = find_next_vertex ();
         if (need_schedule) {
             des_core = -1;
             while ( (check_free_core () != 0) && (exist_pri (3) != 0) ) {
@@ -577,21 +572,21 @@ int algorithm () {
     return ticks;
 }
 
-void node_recover () 
+void vertex_recover () 
 {
     int i = 0;
-    node_t *p_node = &testnode[0];
+    vertex_t *p_vertex = &testvertex[0];
     for (i = 0; i < NUM + 1; i++) {
-        p_node -> priority = 0;
-        p_node -> critical = 0;
-        p_node -> to_schedule = 0;
-        p_node -> scheduled = 0;
-        p_node -> dest_core = -1;
-        p_node -> start_time = -1;
-        p_node -> cost = 0;
-        ++ p_node;
+        p_vertex -> priority = 0;
+        p_vertex -> critical = 0;
+        p_vertex -> to_schedule = 0;
+        p_vertex -> scheduled = 0;
+        p_vertex -> dest_core = -1;
+        p_vertex -> start_time = -1;
+        p_vertex -> cost = 0;
+        ++ p_vertex;
     }
-    //-- p_node;
+    //-- p_vertex;
 }
 
 void random_test()
@@ -618,20 +613,20 @@ void main()
             result[result_idx] = 0;
         }
         printf("test %d started\n", test);
-        node_t* p_node = &testnode[0]; /*节点指针 pointer to a vertex (node)*/
+        vertex_t* p_vertex = &testvertex[0]; /*pointer to a vertex*/
 
         /*Initialization stage*/
-        node_init (p_node); /*节点的初始化 Initialization on nodes*/
-        dag_init (); /*DAG图邻接矩阵的初始化 init on adjacent matrix of DAG*/ 
-        epower_init (); /*DAG图边权值矩阵的初始化 init on edges' power matrix of DAG*/
-        core_init ();	/*处理器模型的初始化 init on the processor model */
+        vertex_init (p_vertex); /*Initialization on vertaces*/
+        dag_init (); /*init on adjacent matrix of DAG*/ 
+        epower_init (); /*init on edges' power matrix of DAG*/
+        core_init ();	/*init on the processor model */
 
         /*Stage of random number production*/
-        p_node = &testnode[0];
-        empower_node (p_node);/*随机生成节点权值 Randomly produces the power of nodes*/
-        dag_create ();/*DAG图邻接矩阵的随机生成 Randomly produces the adjacent matrix of the DAG.*/ 
-        empower_epower ();/*DAG图边权值的随机生成 Randomly produces the power of edges.*/
-        dag_makeup (); /*将DAG补全成AOE网络 Convert the DAG to Activity-on-Edge network*/
+        p_vertex = &testvertex[0];
+        empower_vertex (p_vertex);/*Randomly produces the power of vertexs*/
+        dag_create ();/*Randomly produces the adjacent matrix of the DAG.*/ 
+        empower_epower ();/*Randomly produces the power of edges.*/
+        dag_makeup (); /*Convert the DAG to Activity-on-Edge network*/
         
         /*Function Decls of seq and par*/
         void iteration(int var)
@@ -639,11 +634,11 @@ void main()
 			int result_private = result[var];
         	MIU = (float)var / 100.0;
 			core_init ();
-			node_recover ();
+			vertex_recover ();
 			list_init ();
-			convert_dag (); /*DAG图权值的变换 Transfer the power from vertices to edges*/
+			convert_dag (); /*Transfer the power from vertices to edges*/
 			createadjlist ();
-			critical_path ();  /*AOE关键路径的求解 Solving the critical path.*/
+			critical_path ();  /*Solving the critical path.*/
 			result_private = algorithm ();
 			result_total_par[var] += result_private;
         }
@@ -653,11 +648,11 @@ void main()
 			for (var = 0; var <= 100; var++) {
 				MIU = (float)var / 100.0;
 				core_init ();
-				node_recover ();
+				vertex_recover ();
 				list_init ();
-				convert_dag (); /*DAG图权值的变换 Transfer the power from vertices to edges*/
+				convert_dag (); /*Transfer the power from vertices to edges*/
 				createadjlist ();
-				critical_path ();  /*AOE关键路径的求解 Solving the critical path.*/
+				critical_path ();  /*Solving the critical path.*/
 				result[var] = algorithm ();
 				result_total_seq[var] += result[var];
 			}

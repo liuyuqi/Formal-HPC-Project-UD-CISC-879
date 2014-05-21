@@ -4,7 +4,7 @@
 #include <time.h>
 
 #define NUM 100 /*任务节点个数*/
-#define NUMTEST 100
+#define NUMTEST 20
 //#define MIU 1/NUM /*权值折算时的系数*/
 
 float MIU;
@@ -79,6 +79,8 @@ typedef struct {
 }vexnode;
 vexnode ga[NUM+1]; 
 #pragma omp threadprivate(ga)
+
+double get_wall_time();
 
 /*处理器模型的初始化*/
 /*Initialization of the processor model*/
@@ -627,6 +629,8 @@ void node_recover ()
 
 int main (void)
 {
+	double wall1, wall2;
+	wall1 = get_wall_time();
     int test, result_idx, var;
     int result[101];
     long result_total[101];
@@ -684,6 +688,8 @@ int main (void)
             printf("When MIU = %.2f, total time is %d\n", result_idx/100.0, result_total[result_idx]);
         }
 	}   
+	wall2 = get_wall_time();
+	printf("####### Total time consumed: %lf seconds!\n", wall2-wall1);
     return 0;
 }
 
