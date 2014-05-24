@@ -539,13 +539,13 @@ void schedule (int task)
     for (i = 0; i < NCORE; i++) {
         if (core[i].idle == 1) {
             testnode[task].dest_core = i;
-
             testnode[task].scheduled = 1;
             testnode[task].to_schedule = 0;
             core[i].idle = 0;
             core[i].curr_node = task;
             core[i].remain = testnode[task].node_power;
-            if (dag_new[core[i].last_node][task] == 0 ) {
+            //civl bug found
+            if (core[i].last_node >= 0 && dag_new[core[i].last_node][task] == 0 ) {
                 large = 0;
                 for (j = 0; j < NUM + 1; j++) {
                     if (dag_new[j][task] == 1 && large < e_power[j][task])
